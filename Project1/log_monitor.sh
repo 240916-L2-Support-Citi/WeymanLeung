@@ -4,25 +4,26 @@
 LOGFILE="/home/leungweyman/Revature/WeymanLeung/Project1/app.log"
 USERNAME="leungweyman"
 
-# read last 60 logs in logfile
+# Read last 60 logs in LOGFILE
 tail -n 60 $LOGFILE | while read line; do
-	# grab first 2 columns date, time
+	# Collect first 2 columns of line using awk
 	TIMESTAMP=$(echo $line | awk '{print $1, $2}')
-	# search for error or fatal
+	# Search for Error/Fatal using grep
 	LEVEL=$(echo $line | grep -o 'ERROR\|FATAL')
-	# grab everything after ] and escape quotes
+	# Collect everything after ']' and escape quotes
 	MESSAGE=$(echo $line | awk -F '] ' '{print $2}' | sed "s/'/''/g")
 
-	# convert timestamp into seconds for comparison
+	# Convert timestamps into seconds for comparison
 	CURRENTTIME=$(date +%s)
 	PREVIOUSTIME=$(date -d "$TIMESTAMP" +%s)
 	DIFFERENCE=$((CURRENTTIME - PREVIOUSTIME))
 
-	# if difference less than minute and if level non empty then its valid
+	# Check difference between two timestamps (1 min), Check if non zero value, if non zero, it is valid
 	if [[ $DIFFERENCE -le 60 ]] && [[ -n $LEVEL ]]; then
 		# echo "${TIMESTAMP} | ${LEVEL} | ${MESSAGE}"
 		echo $line
-		# added constraint in db for duplicate entries
+		# Insert log into database
+		# Added unique constraint on timestamp on table
 		psql -U $USERNAME -d "project1" -c "INSERT INTO log_entries (timestamp, level, message) VALUES ('$TIMESTAMP', '$LEVEL', '$MESSAGE')";
 		# echo "Inserted ${line} into database" 
 	fi
